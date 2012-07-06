@@ -2,15 +2,15 @@ package WebLayer::UI::Component::Dialog::Simple::Field::Password;
 use Moo;
 use namespace::clean;
 
-extends 'WebLayer::UI::Component::Dialog::Simple::Field::Text';
+extends 'WebLayer::UI::Component::Input::Password';
 
-around _prepare_markup => sub {
-    my ($orig, $self, $ctx, $markup, $data) = @_;
-    return $self->$orig($ctx, $markup, $data)
-        ->select('.ui-field-text')
-        ->set_attribute(type => 'password')
-        ->then
-        ->add_to_attribute(class => 'ui-field-password');
-};
+sub _default_template { 'dialog/simple/field/text.html' }
+
+sub _sel_js_root { '.ui-field-text' }
+sub _sel_root    { '.ui-dialog-simple-row' }
+
+with $_ for qw(
+    WebLayer::UI::Component::Dialog::Simple::Field::API
+);
 
 1;

@@ -23,7 +23,8 @@ around _render_child => sub {
     my ($orig, $self, $ctx, $child) = @_;
     my $child_markup = $self->$orig($ctx, $child);
     return $child_markup
-        if $child->isa('WebLayer::UI::Component::Dialog::Simple::Field');
+        if $child
+            ->does('WebLayer::UI::Component::Dialog::Simple::Field::API');
     return HTML::Zoom
         ->from_file($ctx->file('templates/dialog/simple/non-field.html'))
         ->replace_content('.ui-non-field', $child_markup)
