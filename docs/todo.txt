@@ -1,4 +1,75 @@
 
+SIMPLE DIALOG FREEFORM WIDGETS:
+
+    $ctx->make('Dialog::Simple')
+        ->field(Widget => sub {
+            $_->fixed(label => 'Date')
+              ->maps('date.full' => {
+                  year  => 'date.year',
+                  month => 'date.month',
+                  day   => 'date.day',
+              })
+              ->widget($ctx->make('Segment')->children(
+                $ctx->make('Input::Text')
+                    ->fixed(size => 4)
+                    ->provides(value => 'date.year'),
+                '/',
+                $ctx->make('Input::Text')
+                    ->fixed(size => 2)
+                    ->provides(value => 'date.month'),
+                '/',
+                $ctx->make('Input::Text')
+                    ->fixed(size => 2)
+                    ->provides(value => 'date.day'),
+              ));
+        });
+
+
+CHECKBOX GROUPS:
+
+    $ctx->make('Input::CheckboxGroup')
+        ->provides(selected => 'icbg.current')
+        ->fixed(options => [
+            { key => 23, value => 'Foo' },
+            { key => 42, value => 'Bar' },
+        ]);
+
+
+CHECKBOXES:
+
+    $ctx->make('Input::Checkbox')
+        ->provides(checked => 'icb.true');
+
+
+RADIO GROUPS:
+
+    $ctx->make('Input::RadioGroup')
+        ->provides(selected => 'irg.current')
+        ->fixed(options => [
+            { key => 3, value => 'Foo' },
+            { key => 4, value => 'Bar' },
+        ]);
+
+
+LINKS:
+
+    $ctx->make('Link')
+        ->receives(href => 'link.href')     # defaults to '#'
+        ->children(...);
+
+
+ANCHORS:
+
+    $ctx->make('Anchor')
+        ->id('foo')
+        ->children(...);
+
+
+IMAGES:
+
+    $ctx->make('Image')
+        ->receives(src => 'some.iamge.uri');
+
 
 MAPPINGS:
 
