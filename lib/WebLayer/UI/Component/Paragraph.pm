@@ -1,5 +1,19 @@
 package WebLayer::UI::Component::Paragraph;
 use Moo;
+use namespace::clean;
+
+extends 'WebLayer::UI::Component::Container';
+
+sub BUILD {
+    my ($self) = @_;
+    $self->classes('ui-paragraph')
+         ->element('p');
+}
+
+1;
+
+__END__
+use Moo;
 use WebLayer::UI::Util  qw( :js );
 use namespace::clean;
 

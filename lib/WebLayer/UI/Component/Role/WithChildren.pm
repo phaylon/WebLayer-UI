@@ -20,7 +20,7 @@ sub _children { @{$_[0]->_collected_children} }
 
 sub _render_children {
     my ($self, $ctx) = @_;
-    return HTML::Zoom->from_html(join "\n",
+    return HTML::Zoom->from_html(join '',
         map $self->_render_child($ctx, $_)->to_html, $self->_children,
     );
 }

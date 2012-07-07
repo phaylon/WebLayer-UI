@@ -1,5 +1,22 @@
 
-LOGGING
+
+MAPPINGS:
+
+    $comp->maps('some.mapping' => {
+        foo => 'some.other.foo',
+        bar => 'yet.another.bar',
+    })
+
+
+ACTION SHORTCUTS:
+
+    $_->remove('#foo', '.bar')
+    $_->request(sub { ... })
+    $_->show(targets => ['#foo'], duration => 'fast')
+    $_->hide(targets => ['#foo'], duration => 'fast')
+
+
+LOGGING:
 
     $code_producer->log(
         'some-value',                   # literal
@@ -31,11 +48,13 @@ USER DEFINED FUNCTIONS:
     }
 
     $comp->on(click => sub {
-        $_->invoke(myFunc => { some_option => 23 })
-          ->when_success(sub {
-              $_->populate_as('some_result' => 'some.receiver');
-          })
-          ->when_error(sub {
-              $_->log('an error occured');
-          })
+        $_->invoke(myFunc => sub {
+          $_->args(some_option => 'some.value')
+            ->when_success(sub {
+                $_->populate_as('some_result' => 'some.receiver');
+            })
+            ->when_error(sub {
+                $_->log('an error occured');
+            });
+        });
     });

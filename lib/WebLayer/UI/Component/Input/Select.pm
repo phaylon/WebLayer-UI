@@ -19,6 +19,8 @@ sub hide_empty { $_[0]->_empty_hidden(1); shift }
 
 sub _default_template { 'input/select.html' }
 
+sub _has_empty { defined $_[0]->_empty_label }
+
 sub _has_slots {
     size => {
         set => sub { js_set_attr($_[0]->_sel_js_root, 'size', 'value') },
@@ -44,19 +46,29 @@ sub _has_slots {
             return js_code q!
                 var sel   = %(json:sel_root);
                 var from  = sel ? $(sel, root) : $(root);
-                var mark  = 'option:not([class=~"unreal"])';
+                var mark  = 'option:not([class~="unreal"])';
                 $(mark, from).remove();
                 var elems = [];
                 $.each(value, function (i, option) {
-                    var elem = document.createElement('option');
-                    elem.attr('value', option.key);
-                    elem.html(option.value);
-                    $(from).append(elem);
-                    elems.push(elem);
+                    if (\!$(option).hasClass("unreal")) {
+                        var elem = $(document.createElement('option'));
+                        elem.attr('value', option.key);
+                        elem.html(option.value);
+                        $(from).append(elem);
+                        elems.push(elem);
+                    }
                 });
                 $.each(elems, function (i, elem) { elem.show() });
+                $('option:selected', from).each(function (i, option) {
+                    $(option).removeAttr('selected');
+                });
+                if (%(json:has_empty)) {
+                    var empty = $('option[class~="empty"]', from).first();
+                    empty.attr('selected', 'selected');
+                }
                 return true;
-            !,  sel_root => $_[0]->_sel_js_root;
+            !,  sel_root  => $_[0]->_sel_js_root,
+                has_empty => $_[0]->_has_empty;
         },
     },
     selected => {
@@ -140,7 +152,7 @@ sub _prepare_markup {
         })
         ->replace_content('.ui-field-select', \join '',
             defined($self->_empty_label) ? $self->_blank_option
-                ->add_to_attribute('option', class => 'unreal')
+                ->add_to_attribute('option', class => 'unreal empty')
                 ->replace_content('option', $self->_empty_label)
                 ->apply_if($self->_empty_hidden, sub {
                   $_->add_to_attribute('option',
