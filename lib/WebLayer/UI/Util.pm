@@ -2,10 +2,11 @@ use strictures 1;
 
 package WebLayer::UI::Util;
 use Data::Dump;
-use Scalar::Util        qw( blessed );
-use Hash::Merge         qw( merge );
-use Carp                qw( confess );
+use Scalar::Util                qw( blessed );
+use Hash::Merge                 qw( merge );
+use Carp                        qw( confess );
 use JSON::XS;
+use JavaScript::Minifier::XS    qw( minify );
 use namespace::clean;
 
 use Sub::Exporter -setup => {
@@ -16,7 +17,10 @@ use Sub::Exporter -setup => {
         js_get_attr js_set_attr
         js_get_text js_set_text
         js_get_html js_set_html
+        js_code
         json_enc json_dec
+        singleline
+        dbg_pp
     )],
     groups => {
         js => [qw(
@@ -24,6 +28,7 @@ use Sub::Exporter -setup => {
             js_get_attr js_set_attr
             js_get_text js_set_text
             js_get_html js_set_html
+            js_code
         )],
         json => [qw(
             json_enc json_dec
@@ -34,8 +39,26 @@ use Sub::Exporter -setup => {
         nested => [qw(
             nest_data unnest_data get_nested
         )],
+        strings => [qw(
+            singleline
+        )],
+        debug => [qw(
+            dbg_pp
+        )],
     },
 };
+
+sub dbg_pp {
+    pp(\[@_]);
+    return wantarray ? @_ : shift;
+}
+
+sub singleline ($) {
+    my $str = shift;
+    $str =~ s{\s*\n+\s*}{ }g;
+    $str =~ s{(?:^\s+|\s+$)}{}g;
+    return $str;
+}
 
 my $_json = JSON::XS->new->allow_nonref->utf8;
 
@@ -47,6 +70,14 @@ my $_opt_select = sub {
     return '' unless defined $sel;
     sprintf '%s, ', json_enc $sel;
 };
+
+sub js_code {
+    my ($body, %arg) = @_;
+    $body = singleline $body;
+    $body =~ s!\%\(json:([a-z0-9_]+)\)!json_enc($arg{$1})!gie;
+    $body =~ s!\%\(raw:([a-z0-9_]+)\)!$arg{$1}!gie;
+    return minify $body;
+}
 
 sub js_get_html {
     return sprintf q!return $(%sroot).html()!, $_opt_select->(shift);

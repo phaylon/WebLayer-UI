@@ -16,7 +16,7 @@ sub _render {
     my ($self, $ctx, $data) = @_;
     my $template = $self->_find_template($ctx);
     my $markup   = HTML::Zoom->from_file($template);
-    return $self->_prepare_markup($ctx, $markup, $data);
+    return $self->_prepare_markup($ctx, $markup, $data)->memoize;
 }
 
 sub _find_template {

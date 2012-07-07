@@ -46,7 +46,7 @@ my $_set_slot = sub {
     my $store = $self->$type;
     while (my $slot = shift @set) {
         my $name = shift @set;
-        confess "Unknown slot '$_'"
+        confess "Unknown slot '$slot'"
             unless $self->_slots->{$slot};
         if ($type ne '_static_inputs' and $type ne '_fixed_values') {
             confess "Slot '$slot' can only be set during rendering"

@@ -71,7 +71,7 @@ sub _render_scripts {
 sub _render_js_setup {
     my ($self, $ctx) = @_;
     return HTML::Zoom->from_html(sprintf
-        q!<script %s>$(function () { %s })</script>!,
+        qq!<script %s>\$(function () {\n%s})</script>!,
         'type="text/javascript"',
         join('', map "$_;\n",
             $ctx->_render_js_io,

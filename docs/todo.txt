@@ -1,0 +1,41 @@
+
+LOGGING
+
+    $code_producer->log(
+        'some-value',                   # literal
+        [get => 'provided.data'],       # env data
+        [data => 'foo'],                # result data
+    );
+
+
+ALIASED REQUEST I/O:
+
+    $req->send_values_as(
+        'foo.bar' => 'foo',
+        'foo.baz' => 'bar',
+    );
+
+    $req->populate_as(
+        'foo' => 'foo.bar',
+        'bar' => 'foo.baz',
+    );
+
+
+USER DEFINED FUNCTIONS:
+
+    function myFunc (position, options) {
+        if (options.some_option) {
+            return { some_result: options.some_option }
+        }
+        return false;
+    }
+
+    $comp->on(click => sub {
+        $_->invoke(myFunc => { some_option => 23 })
+          ->when_success(sub {
+              $_->populate_as('some_result' => 'some.receiver');
+          })
+          ->when_error(sub {
+              $_->log('an error occured');
+          })
+    });

@@ -25,11 +25,20 @@ sub _parse_construct_values { () }
 sub _render_actions {
     my ($self) = @_;
     return join ';',
-#        $self->_render_init,
         map $_->_render, @{$self->_actions};
 }
 
-sub _render_init { 'var current = this' }
+sub sync {
+    my ($self, @args) = @_;
+    while (@args) {
+        my $from = shift @args;
+        my $to   = shift @args;
+        $self->perform('Sync', sub {
+            $_->from($from)->to($to);
+        });
+    }
+    return $self;
+}
 
 sub perform {
     my ($self, $type, @args) = @_;

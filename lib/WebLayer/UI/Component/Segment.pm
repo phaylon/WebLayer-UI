@@ -1,35 +1,41 @@
-package WebLayer::UI::Component::Paragraph;
+package WebLayer::UI::Component::Segment;
 use Moo;
 use WebLayer::UI::Util  qw( :js );
+use HTML::Zoom;
 use namespace::clean;
 
 extends 'WebLayer::UI::Component';
 
-sub _default_template { 'paragraph.html' }
-
 sub _has_slots {
+    text => {
+        set => sub { js_set_text(undef, 'value') },
+        get => sub { js_get_text(undef) },
+    },
     content => {
         set => sub { js_set_html(undef, 'value') },
         get => sub { js_get_html(undef) },
     },
 }
 
+sub _make_source_stream {
+    my ($self) = @_;
+    return HTML::Zoom
+        ->from_html(q{<span class="ui-segment"></span>});
+}
+
 sub _prepare_markup {
     my ($self, $ctx, $markup, $data) = @_;
-    my $body_content = $self->_render_children($ctx);
     return $markup
-        ->apply($self->_cb_apply_common('.ui-paragraph'))
-        ->replace_content('.ui-paragraph', $body_content)
+        ->apply($self->_cb_apply_common('.ui-segment'))
         ->apply($self->_cb_apply_ifdef($data->{content}, sub {
-            $_->replace_content('.ui-paragraph', shift);
+            $_->replace_content('.ui-segment', shift);
         }));
 }
 
 with $_ for qw(
-    WebLayer::UI::Component::Role::FromTemplate
+    WebLayer::UI::Component::Role::FromStream
     WebLayer::UI::Component::Role::WithIdentifier
     WebLayer::UI::Component::Role::WithClasses
-    WebLayer::UI::Component::Role::WithChildren
 );
 
 1;

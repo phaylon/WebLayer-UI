@@ -27,6 +27,8 @@ sub _render_children {
 
 sub _render_child {
     my ($self, $ctx, $child) = @_;
+    return HTML::Zoom->from_events([{ raw => $child, type => 'TEXT' }])
+        unless ref $child;
     return $ctx->_render($child);
 }
 
