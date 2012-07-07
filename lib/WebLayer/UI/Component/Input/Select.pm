@@ -32,11 +32,11 @@ sub _has_slots {
                 var sel  = %(json:sel_root);
                 var from = sel ? $(sel, root) : $(root);
                 var data = [];
-                $('option:not([class=~"unreal"])', from)
+                $('option:not([class~="unreal"])', from)
                     .each(function (i, elem) {
                         data.push({
-                            key:    elem.attr('value'),
-                            value:  elem.html(),
+                            key:    $(elem).attr('value'),
+                            value:  $(elem).html(),
                         });
                     });
                 return data;
@@ -106,7 +106,7 @@ sub _has_slots {
                     $.each(value, function (i, key) {
                         keys[key] = true;
                     });
-                    $('option:not([class=~"unreal"])', from)
+                    $('option:not([class~="unreal"])', from)
                         .each(function (i, option) {
                             if (keys[option.attr("value")]) {
                                 $(option).attr("selected", "selected");
