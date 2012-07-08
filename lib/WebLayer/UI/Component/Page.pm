@@ -47,7 +47,7 @@ sub _prepare_markup {
         ->set_attribute('#wlui-js-uri', src => $data->{wlui_js_uri})
         ->select('head')
         ->append_content($self->_render_js_setup($ctx))
-        ->apply($self->_cb_apply_common('html'))
+        ->apply($self->_cb_apply_common('html', $ctx))
         ->select('body')
         ->replace_content($body_content);
 }

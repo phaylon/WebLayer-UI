@@ -1,3 +1,128 @@
+** Note: These are just ideas **
+
+WATCHERS:
+
+    $comp->watch('some.value', sub {
+        $_->perform('Something', ...);
+    });
+
+
+SWITCHABLE WIDGETS:
+
+    $ctx->make('Switchable::Bool')
+        ->receives(state => 'page.has_next')
+        ->provides(state => 'page.has_next')
+        ->case_true(
+            $ctx->make('Link')
+                ->fixed(content => 'Next Page')
+                ->on(click => sub {
+                    # retrieve next page
+                }),
+        )
+        ->case_false('Next Page');
+
+    $ctx->make('Switchable::Value')
+        ->receives(state => 'list.order')
+        ->provides(state => 'list.order')
+        ->case('asc', ...)
+        ->case('desc', ...)
+        ->case('off', ...)
+        ->case_else(...);
+
+
+OPTION GROUPS:
+
+    [{...}, [$title, {...}]]
+
+
+LISTS:
+
+    $ctx->make('List')
+        ->unordered
+        ->collection(sub {
+            $_->provides(all => 'list.full')
+              ->receives(replace => 'list.replace')
+              ->keyed_by('id')
+              ->contains(
+                id      => 'item.id',
+                content => 'item.content',
+              );
+        })
+        ->prototype(
+            $ctx->make('Paragraph')
+                ->provides('item.content')
+                ->receives('item.content'),
+        );
+
+
+TABLES:
+
+    $ctx->make('Table')
+        ->collection(sub {
+            $_->provides(all => 'table.full')
+              ->receives(replace => 'table.replace')
+              ->contains(
+                id   => 'item.id',
+                name => 'item.name',
+                city => 'item.city',
+              );
+        })
+        ->header('Simple', sub {
+            $_->sorting('Stacked', sub {
+                $_->state('table.sorting')
+                  ->asc(
+                    $ctx->make('Image')
+                        ->fixed(src => 'asc.png')
+                  )
+                  ->desc(
+                    $ctx->make('Image')
+                        ->fixed(src => 'asc.png')
+                  )
+                  ->off(
+                    $ctx->make('Image')
+                        ->fixed(src => 'asc.png')
+                  )
+              })
+              ->wrap_column(sub {
+                  $ctx->make('Segment')
+                      ->on(click => $_->toggle_sorting)
+                      ->children(
+                        $_->is_sortable ? $_->sort_mark : (),
+                        $_->label,
+                      );
+              });
+        })
+        ->column('Text', id => sub {
+            $_->label('User ID')
+              ->provides(content => 'item.id')
+              ->receives(content => 'item.id')
+              ->sortable;
+        })
+        ->column('Text', name => sub {
+            $_->label('Name')
+              ->provides(content => 'item.name')
+              ->receives(content => 'item.name')
+              ->sortable;
+        })
+        ->column('Text', city => sub {
+            $_->label('City')
+              ->provides(content => 'item.city')
+              ->receives(content => 'item.city')
+              ->sortable;
+        });
+
+
+USER DEFINED EVENTS:
+
+    $ctx->make('Page')
+        ->event(update => sub {
+            $_->perform(...);
+        });
+
+    $comp->on(event => sub {
+        $_->trigger('update');
+    });
+
 
 SIMPLE DIALOG FREEFORM WIDGETS:
 

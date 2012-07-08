@@ -34,8 +34,8 @@ sub _cb_apply_id {
 }
 
 around _apply_common => sub {
-    my ($orig, $self, $markup, $selector) = @_;
-    return $self->$orig($markup, $selector)
+    my ($orig, $self, $markup, $selector, $ctx) = @_;
+    return $self->$orig($markup, $selector, $ctx)
         ->apply($self->_cb_apply_id($selector));
 };
 

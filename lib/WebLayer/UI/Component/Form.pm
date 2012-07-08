@@ -38,7 +38,7 @@ sub _prepare_markup {
         ->apply($self->_cb_apply_ifdef($data->{submit_method}, sub {
             $_->set_attribute($self->_sel_form, method => shift);
         }))
-        ->apply($self->_cb_apply_common($self->_sel_form))
+        ->apply($self->_cb_apply_common($self->_sel_form, $ctx))
         ->select($self->_sel_container)
         ->append_content($self->_render_children($ctx))
         ->memoize;

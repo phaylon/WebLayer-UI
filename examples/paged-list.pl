@@ -21,6 +21,7 @@ do {
         jquery_uri  => 'page.jquery',
         wlui_js_uri => 'page.wlui',
       )
+      ->variable('list.page')
       ->children(
         $ctx->make('Paragraph')
           ->id('header')
@@ -41,9 +42,16 @@ do {
 do {
   package MyApp::Web;
   use Web::Simple;
+  use Data::Faker;
 
   my $ui   = WebLayer::UI->new;
   my $view = MyApp::View->new;
+  my $fake = Data::Faker->new;
+
+  my $user_id = 476;
+  my @users = map {
+      { id => $user_id++, name => $fake->name, city => $fake->city };
+  } 1 .. 100;
 
   sub dispatch_request {
     my ($self, $env) = @_;
@@ -63,6 +71,7 @@ do {
         },
         list => {
           count_per_page    => 10,
+          page              => 1,
         },
       });
     },

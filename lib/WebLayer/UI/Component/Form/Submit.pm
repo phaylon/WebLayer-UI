@@ -22,7 +22,7 @@ sub _prepare_markup {
         ->apply($self->_cb_apply_ifdef($data->{label}, sub {
             $_->set_attribute('.ui-form-submit', value => shift);
         }))
-        ->apply($self->_cb_apply_common('.ui-form-submit'))
+        ->apply($self->_cb_apply_common('.ui-form-submit', $ctx))
         ->memoize;
 }
 

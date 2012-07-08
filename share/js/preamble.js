@@ -62,11 +62,24 @@ var wlui = {
     },
     getValue: function (comp, name) {
         var cb_name = this.extractAPI(comp, 'get', name);
+        if (cb_name == '!VAR') {
+            return this.getVar(comp, name);
+        }
         return this.getters[cb_name](comp);
     },
     setValue: function (comp, name, value) {
         var cb_name = this.extractAPI(comp, 'set', name);
+        if (cb_name == '!VAR') {
+            return this.setVar(comp, name, value);
+        }
         this.setters[cb_name](comp, value);
+        return true;
+    },
+    getVar: function (comp, name) {
+        return comp.data().wluiVars[name];
+    },
+    setVar: function (comp, name, value) {
+        comp.data().wluiVars[name] = value;
         return true;
     },
     addGetter: function (cb_name, cb) {

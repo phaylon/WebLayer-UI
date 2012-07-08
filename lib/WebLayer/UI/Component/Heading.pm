@@ -31,7 +31,7 @@ sub _make_source_stream {
 sub _prepare_markup {
     my ($self, $ctx, $markup, $data) = @_;
     return $markup
-        ->apply($self->_cb_apply_common('.ui-heading'))
+        ->apply($self->_cb_apply_common('.ui-heading', $ctx))
         ->apply($self->_cb_apply_ifdef($data->{content}, sub {
             $_->replace_content('.ui-heading', shift);
         }))

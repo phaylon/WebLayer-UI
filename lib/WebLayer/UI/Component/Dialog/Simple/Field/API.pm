@@ -24,7 +24,7 @@ around _uncommon_events => sub { 1 };
 around _prepare_markup => sub {
     my ($orig, $self, $ctx, $markup, $data) = @_;
     return $self->$orig($ctx, $markup, $data)
-        ->apply($self->_cb_apply_common('.ui-dialog-simple-row'))
+        ->apply($self->_cb_apply_common('.ui-dialog-simple-row', $ctx))
         ->apply($self->_cb_apply_ifdef($data->{label}, sub {
             $_->replace_content('.ui-dialog-field-label', shift);
         }))

@@ -143,7 +143,7 @@ sub _prepare_markup {
         }
     }
     return $markup
-        ->apply($self->_cb_apply_common($self->_sel_root))
+        ->apply($self->_cb_apply_common($self->_sel_root, $ctx))
         ->apply_if($self->_multiple, sub {
             $_->set_attribute('.ui-field-select', multiple => 'multiple');
         })

@@ -9,7 +9,7 @@ sub _default_template { 'box.html' }
 sub _prepare_markup {
     my ($self, $ctx, $markup, $data) = @_;
     return $markup
-        ->apply($self->_cb_apply_common('.ui-box'))
+        ->apply($self->_cb_apply_common('.ui-box', $ctx))
         ->append_content('.ui-box', $self->_render_children($ctx))
         ->memoize;
 }

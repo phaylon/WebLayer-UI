@@ -20,7 +20,7 @@ sub _sel_root    { '.ui-field-text' }
 sub _prepare_markup {
     my ($self, $ctx, $markup, $data) = @_;
     return $markup
-        ->apply($self->_cb_apply_common($self->_sel_root))
+        ->apply($self->_cb_apply_common($self->_sel_root, $ctx))
         ->apply($self->_cb_apply_ifdef($data->{value}, sub {
             $_->set_attribute('.ui-field-text', value => shift);
         }));

@@ -1,7 +1,7 @@
 package WebLayer::UI::Component;
 use Moo;
 use Carp                qw( confess );
-use WebLayer::UI::Util  qw( :types :json );
+use WebLayer::UI::Util  qw( :types :json :nested );
 use HTML::Zoom;
 use namespace::clean;
 
@@ -40,6 +40,9 @@ has _runtime_inputs     => (is => 'ro', default => sub { {} });
 has _runtime_outputs    => (is => 'ro', default => sub { {} });
 has _fixed_values       => (is => 'ro', default => sub { {} });
 has _is_hidden          => (is => 'rw');
+has _variables          => (is => 'ro', default => sub { [] });
+
+sub variable { push @{ $_[0]->_variables }, [@_[1 .. $#_]]; shift }
 
 my $_set_slot = sub {
     my ($self, $type, @set) = @_;
@@ -65,44 +68,74 @@ sub fixed    { $_[0]->$_set_slot(_fixed_values => @_[1 .. $#_]) }
 sub hidden   { $_[0]->_is_hidden(1); $_[0] }
 
 sub _cb_apply_common {
-    my ($self, $selector) = @_;
+    my ($self, $selector, $ctx) = @_;
     return sub {
-        return $self->_apply_common($_, $selector);
+        return $self->_apply_common($_, $selector, $ctx);
     };
 }
 
 sub _uncommon_events { 0 }
 
 sub _apply_common {
-    my ($self, $markup, $selector) = @_;
+    my ($self, $markup, $selector, $ctx) = @_;
     $markup = $self->_apply_styles($markup, $selector);
-    $markup = $self->_apply_env_data($markup, $selector);
+    $markup = $self->_apply_env_data($markup, $selector, $ctx);
     return $markup
         if $self->_uncommon_events;
     return $markup->apply($self->_cb_apply_events($selector));
 }
 
+sub _var_names { map { $_->[0] } @{ $_[0]->_variables } }
+
+sub _var_init {
+    my ($self, $ctx) = @_;
+    my %values;
+    for my $var (@{$self->_variables}) {
+        my ($name, $init_value) = @$var;
+        $values{$name} = $init_value
+            if @$var > 1;
+        $init_value = $ctx->_get_value($name);
+        $values{$name} = $init_value
+            if defined $init_value;
+    }
+    return %values;
+}
+
 sub _apply_env_data {
-    my ($self, $markup, $selector) = @_;
-    my $inputs  = $self->_runtime_inputs;
-    my $outputs = $self->_runtime_outputs;
+    my ($self, $markup, $selector, $ctx) = @_;
+    my $inputs      = $self->_runtime_inputs;
+    my $outputs     = $self->_runtime_outputs;
+    my @vars        = @{ $self->_variables };
+    my @var_names   = $self->_var_names;
+    my %var_init    = $self->_var_init($ctx);
     $markup = $markup
-        ->add_to_attribute($selector, 'data-wlui-in', $inputs->{$_})
-        for keys %$inputs;
+        ->add_to_attribute($selector, 'data-wlui-in', $_)
+        for @var_names, values %$inputs;
     $markup = $markup
-        ->add_to_attribute($selector, 'data-wlui-out', $outputs->{$_})
-        for keys %$outputs;
-    if (keys %$inputs or keys %$outputs) {
+        ->add_to_attribute($selector, 'data-wlui-out', $_)
+        for @var_names, values %$outputs;
+    $markup = $markup->add_to_attribute($selector,
+        'data-wlui-vars', json_enc(\%var_init),
+    ) if keys %var_init;
+    if (keys %$inputs or keys %$outputs or @var_names) {
         $markup = $markup->set_attribute($selector, 'data-wlui-api',
-            json_enc({ map {
-                my ($type, $map) = @$_;
-                keys(%$map) ? ($type => { map {
-                    ($map->{$_}, join ':',
-                        $self->_component_index,
-                        $type,
-                        $_);
-                } keys %$map }) : ();
-            } [set => $inputs], [get => $outputs] }),
+            json_enc({
+                (map {
+                    my ($type, $map) = @$_;
+                    ($type => {
+                        keys(%$map) ? (map {
+                            ($map->{$_}, join ':',
+                                $self->_component_index,
+                                $type,
+                                $_,
+                            );
+                        } keys %$map) : (),
+                        (map {
+                            ($_, '!VAR');
+                        } @var_names),
+                    });
+                } [set => $inputs], [get => $outputs]),
+            }),
         );
     }
     return $markup;
@@ -250,5 +283,9 @@ sub _join_markup {
     my ($self, @markup) = @_;
     return HTML::Zoom->from_html(join "\n", map $_->to_html, @markup);
 }
+
+with $_ for qw(
+    WebLayer::UI::Role::Apply
+);
 
 1;

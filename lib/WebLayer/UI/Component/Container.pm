@@ -36,7 +36,7 @@ sub _prepare_markup {
     my ($self, $ctx, $markup, $data) = @_;
     my $body_content = $self->_render_children($ctx);
     return $markup
-        ->apply($self->_cb_apply_common('.ui-container'))
+        ->apply($self->_cb_apply_common('.ui-container', $ctx))
         ->replace_content('.ui-container', $body_content)
         ->memoize
         ->apply($self->_cb_apply_ifdef($data->{text}, sub {
