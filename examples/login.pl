@@ -110,12 +110,8 @@ do {
         [$ui->js],
       ];
     },
-    sub (POST + /api + %*) {
-      my ($self, $params) = @_;
-      my ($user, $pass) = @{ $params }{qw(
-        login.username
-        login.password
-      )};
+    sub (POST + /api + %login.username~ &login.password~) {
+      my ($self, $user, $pass) = @_;
       if (my $pw = $passwd{$user}) {
         if ($pass eq $pw) {
           return $self->render_json({
