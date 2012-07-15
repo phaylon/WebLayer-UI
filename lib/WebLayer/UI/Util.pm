@@ -24,7 +24,7 @@ use Sub::Exporter -setup => {
         json_enc json_dec
         singleline tight_singleline
         dbg_pp
-        settable collectable mappable
+        settable collectable mappable toggleable
     )],
     groups => {
         js => [qw(
@@ -51,7 +51,7 @@ use Sub::Exporter -setup => {
             dbg_pp pp
         )],
         api => [qw(
-            settable collectable mappable
+            settable collectable mappable toggleable
         )],
     },
 };
@@ -70,6 +70,35 @@ sub js_get {
 }
 
 my $_meth_gen = Method::Generate::Accessor->new;
+
+sub toggleable {
+    my ($name, %arg) = @_;
+    my $class = scalar caller;
+    my $attr  = "_${name}";
+    my $write = "_set_$name";
+    my $on    = delete $arg{enable};
+    my $off   = delete $arg{disable};
+    install_sub {
+        into    => $class,
+        as      => $on,
+        code    => sub { $_[0]->$write(1); $_[0] },
+    } if defined $on;
+    install_sub {
+        into    => $class,
+        as      => $off,
+        code    => sub { $_[0]->$write(0); $_[0] },
+    } if defined $off;
+    install_sub {
+        into    => $class,
+        as      => $name,
+        code    => sub { $_[0]->$write($_[1]); $_[0] },
+    };
+    return $attr => (
+        is      => 'ro',
+        writer  => $write,
+        %arg,
+    );
+}
 
 sub mappable {
     my ($name, %arg) = @_;

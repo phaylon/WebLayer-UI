@@ -1,16 +1,16 @@
 package WebLayer::UI::Component::List;
 use Moo;
 use Carp                qw( confess );
-use WebLayer::UI::Util  qw( :js :debug );
+use WebLayer::UI::Util  qw( :js :debug :api );
 use HTML::Zoom;
 use namespace::clean;
 
 extends 'WebLayer::UI::Component';
 
-has _is_ordered => (is => 'rw');
-
-sub ordered   { $_[0]->_is_ordered(1); shift }
-sub unordered { $_[0]->_is_ordered(0); shift }
+has toggleable is_ordered => (
+    enable  => 'ordered',
+    disable => 'unordered',
+);
 
 sub _make_source_stream {
     my ($self) = @_;
