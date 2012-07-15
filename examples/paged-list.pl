@@ -145,10 +145,10 @@ do {
         %{ $self->get_page },
       });
     },
-    sub (GET + /api/page + ?*) {
-      my ($self, $params) = @_;
+    sub (GET + /api/page + ?list.page=) {
+      my ($self, $page) = @_;
       return $self->render_json($self->get_page(
-        current_page => $params->{'list.page'},
+        current_page => $page,
       ));
     },
   }
