@@ -1,19 +1,18 @@
 package WebLayer::UI::Action::Request;
 use Moo;
 use Carp                qw( confess );
-use WebLayer::UI::Util  qw( json_enc );
+use WebLayer::UI::Util  qw( :js :api );
 use namespace::clean;
 
 extends 'WebLayer::UI::Action';
 
-has _method     => (is => 'rw', default => sub { 'GET' });
-has _target     => (is => 'rw');
-has _values     => (is => 'ro', default => sub { [] });
-has _responses  => (is => 'ro', default => sub { {} });
+has settable    send_method     => (default => sub { 'GET' });
+has settable    send_to         => ();
+has settable    send_via        => ();
+has collectable send_values     => ();
+has mappable    send_aliased    => ();
 
-sub send_method { $_[0]->_method($_[1]); $_[0] }
-sub send_to     { $_[0]->_target($_[1]); $_[0] }
-sub send_values { push @{$_[0]->_values}, @_[1 .. $#_]; $_[0] }
+has _responses  => (is => 'ro', default => sub { {} });
 
 sub _when_response {
     my ($self, $type, $name, $cb) = @_;
@@ -30,13 +29,15 @@ sub when_success { $_[0]->_when_response('Success', 'success', $_[1]) }
 sub _render {
     my ($self) = @_;
     my $responses = $self->_responses;
-    return sprintf q!wlui.request(current, %s, %s)!,
+    return sprintf q!wlui.request(current, %s, %s, %s)!,
         sprintf('function (gathered) { return { %s } }', join ', ',
             map join(': ', json_enc($_->[0]), $_->[1]),
-            [type       => json_enc($self->_method)],
-            [url        => json_enc($self->_target)],
+            [type       => json_enc($self->_send_method)],
             [data       => 'gathered'],
             [dataType   => json_enc('json')],
+            $self->_has_send_via
+                ? [url => js_get($self->_send_via)]
+                : [url => json_enc($self->_send_to)],
             $responses->{success}
                 ? [success => $responses->{success}->_render_func]
                 : (),
@@ -44,13 +45,14 @@ sub _render {
                 ? [error => $responses->{error}->_render_func]
                 : (),
         ),
-        json_enc($self->_values);
+        json_enc([$self->_send_values]),
+        json_enc({$self->_send_aliased_kv});
 }
 
 sub _validate {
     my ($self) = @_;
     confess q{You need to specify a target for the request}
-        unless defined $self->_target;
+        unless $self->_has_send_to or $self->_has_send_via;
     return 1;
 }
 

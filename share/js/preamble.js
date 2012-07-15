@@ -76,9 +76,15 @@ var wlui = {
         return true;
     },
     getVar: function (comp, name) {
+        if (!comp.data().wluiVars) {
+            comp.data().wluiVars = {};
+        }
         return comp.data().wluiVars[name];
     },
     setVar: function (comp, name, value) {
+        if (!comp.data().wluiVars) {
+            comp.data().wluiVars = {};
+        }
         comp.data().wluiVars[name] = value;
         return true;
     },
@@ -90,14 +96,68 @@ var wlui = {
         this.setters[cb_name] = cb;
         return true;
     },
-    request: function (pos, settings_builder, values) {
+    request: function (pos, settings_builder, values, aliased) {
         var data = {};
         var me = this;
+        $.each(aliased, function (name, alias) {
+            data[alias] = me.get(pos, name);
+        });
         $.each(values, function (index, value) {
             data[value] = me.get(pos, value);
         });
         var settings = settings_builder(data);
         $.ajax(settings);
         return true;
+    },
+    collSetAll: function (pos, mappings, rows) {
+        $('> *:not([class~="prototype"])', pos).remove();
+        var proto = $('> *[class~="prototype"]', pos);
+        var me = this;
+        $.each(rows, function (i, item_data) {
+            var elem = proto.clone();
+            $.each(item_data, function (key, value) {
+                var field = mappings[key];
+                if (field != undefined) {
+                    me.set(elem, field, value);
+                }
+            });
+            $(pos).append(elem);
+            $(elem).removeClass('prototype');
+            $(elem).show();
+        });
+        return true;
+    },
+    collGetAll: function (pos, mappings) {
+        var rows = [];
+        var me = this;
+        $('> *:not([class~="prototype"])', pos)
+            .each(function (i, elem) {
+                var item_data = {};
+                $.each(mappings, function (key, field) {
+                    item_data[key] = me.get(elem, field);
+                });
+                rows.push(item_data);
+            });
+        return rows;
+    },
+    flattenResponse: function (data, prefix) {
+        var flat = {};
+        var me = this;
+        $.each(data, function (key, value) {
+            var current = key;
+            if (prefix) {
+                current = prefix + '.' + key;
+            }
+            if (value instanceof Object && !(value instanceof Array)) {
+                var lower = me.flattenResponse(value, current);
+                $.each(lower, function (lkey, lvalue) {
+                    flat[lkey] = lvalue;
+                });
+            }
+            else {
+                flat[current] = value;
+            }
+        });
+        return flat;
     }
 };

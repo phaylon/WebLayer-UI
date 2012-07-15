@@ -1,0 +1,65 @@
+
+    package MyApp::View::Login;
+    use WebLayer::UI::DSL;
+
+    component 'Page' => sub {
+        receives title => 'page.title';
+        static jquery_uri => 'page.jquery', wlui_js_uri => 'page.wlui';
+        child component 'Paragraph' => sub {
+            hidden;
+            id 'welcome-message';
+            receives content => 'login.welcome';
+        };
+        child component 'Dialog::Simple' => sub {
+            id 'loginbox-form';
+            static submit_to '=> login.submit.uri';
+            provides submit_to => 'login.submit.uri';
+            fixed submit_method => 'POST';
+            on submit => sub {
+                perform 'Request' => sub {
+                    send_method 'POST';
+                    send_to '/api';
+                    send_values qw( login.username login.password );
+                    when_success {
+                        when_false 'login.ok' => sub {
+                            populate qw( login.message login.password );
+                        };
+                        when_true 'login.ok' => sub {
+                            populate qw( login.welcome );
+                            effect 'Hide', sub {
+                                targets '#loginbox-form';
+                                duration 'fast';
+                                then {
+                                    effect 'Show' => sub {
+                                        targets '#welcome-message';
+                                        duration 'fast';
+                                    };
+                                    perform 'Remove' => sub {
+                                        targets '#loginbox-form';
+                                    };
+                                };
+                            };
+                        };
+                    };
+                };
+            };
+            stop_event;
+        };
+        field 'Text' => sub {
+            receives value => 'login.username';
+            provides value => 'login.username';
+            fixed label => 'Username';
+            receives message => 'login.message';
+        };
+        field 'Password' => sub {
+            receives value => 'login.password';
+            provides value => 'login.password';
+            fixed label => 'Password';
+        };
+        child component 'Box' => sub {
+            id 'actions';
+            child component 'Form::Submit' => sub {
+                fixed label => 'OK';
+            };
+        };
+    };

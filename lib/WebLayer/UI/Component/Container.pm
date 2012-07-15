@@ -7,10 +7,6 @@ use namespace::clean;
 
 extends 'WebLayer::UI::Component';
 
-has _element => (is => 'rw');
-
-sub element { $_[0]->_element($_[1]); shift }
-
 sub _has_slots {
     text => {
         set => sub { js_set_text(undef, 'value') },
@@ -40,6 +36,9 @@ sub _prepare_markup {
         ->replace_content('.ui-container', $body_content)
         ->memoize
         ->apply($self->_cb_apply_ifdef($data->{text}, sub {
+#            warn "APPLY TEXT " . $self->_element;
+#            warn "TEXT " . $_[0];
+#            warn "CURR " . $_->to_html;
             $_->replace_content('.ui-container', shift);
         }))
         ->apply($self->_cb_apply_ifdef($data->{content}, sub {
@@ -56,6 +55,7 @@ with $_ for qw(
     WebLayer::UI::Component::Role::WithChildren
     WebLayer::UI::Component::Role::WithIdentifier
     WebLayer::UI::Component::Role::WithClasses
+    WebLayer::UI::Component::Role::WithElement
 );
 
 1;

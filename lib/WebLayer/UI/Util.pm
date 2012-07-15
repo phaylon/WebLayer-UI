@@ -7,20 +7,24 @@ use Hash::Merge                 qw( merge );
 use Carp                        qw( confess );
 use JSON::XS;
 use JavaScript::Minifier::XS    qw( minify );
+use Sub::Install                qw( install_sub );
+use Method::Generate::Accessor;
 use namespace::clean;
 
 use Sub::Exporter -setup => {
     exports => [qw(
-        isa_ref isa_instance
+        isa_ref isa_instance isa_component isa_duration
         pp
         nest_data unnest_data get_nested
         js_get_attr js_set_attr
         js_get_text js_set_text
         js_get_html js_set_html
         js_code
+        js_get js_set
         json_enc json_dec
-        singleline
+        singleline tight_singleline
         dbg_pp
+        settable collectable mappable
     )],
     groups => {
         js => [qw(
@@ -29,28 +33,155 @@ use Sub::Exporter -setup => {
             js_get_text js_set_text
             js_get_html js_set_html
             js_code
+            js_get js_set
         )],
         json => [qw(
             json_enc json_dec
         )],
         types => [qw(
-            isa_ref isa_instance
+            isa_ref isa_instance isa_component isa_duration
         )],
         nested => [qw(
             nest_data unnest_data get_nested
         )],
         strings => [qw(
-            singleline
+            singleline tight_singleline
         )],
         debug => [qw(
-            dbg_pp
+            dbg_pp pp
+        )],
+        api => [qw(
+            settable collectable mappable
         )],
     },
 };
 
+sub js_set {
+    my ($name, $value_expr) = @_;
+    return sprintf 'wlui.set(current, %s, %s)',
+        json_enc($name),
+        $value_expr;
+}
+
+sub js_get {
+    my ($name) = @_;
+    return sprintf 'wlui.get(current, %s)',
+        json_enc($name);
+}
+
+my $_meth_gen = Method::Generate::Accessor->new;
+
+sub mappable {
+    my ($name, %arg) = @_;
+    my $class = scalar caller;
+    my $attr  = "_${name}_ref";
+    install_sub {
+        into    => $class,
+        as      => "_has_$name",
+        code    => sub { scalar keys %{ $_[0]->$attr } },
+    };
+    install_sub {
+        into    => $class,
+        as      => "_${name}_kv",
+        code    => sub { %{ $_[0]->$attr } },
+    };
+    install_sub {
+        into    => $class,
+        as      => $name,
+        code    => sub {
+            my $ref = $_[0]->$attr;
+            %$ref = (%$ref, @_[1 .. $#_]);
+            return $_[0];
+        },
+    };
+    if (defined( my $clear = $arg{clearer} )) {
+        install_sub {
+            into    => $class,
+            as      => $clear,
+            code    => sub { %{ $_[0]->$attr } = (); $_[0] },
+        };
+    }
+    return $attr => (
+        is      => 'ro',
+        default => sub { {} },
+        %arg,
+    );
+}
+
+sub collectable {
+    my ($name, %arg) = @_;
+    my $class = scalar caller;
+    my $attr  = "_${name}_ref";
+    my $list  = "_${name}";
+    install_sub {
+        into    => $class,
+        as      => $list,
+        code    => sub { @{ $_[0]->$attr } },
+    };
+    install_sub {
+        into    => $class,
+        as      => $name,
+        code    => sub { push @{ $_[0]->$attr }, @_[1 .. $#_]; $_[0] },
+    };
+    install_sub {
+        into    => $class,
+        as      => "_has_$name",
+        code    => sub { scalar @{ $_[0]->$attr } },
+    };
+    if (defined( my $clear = $arg{clearer} )) {
+        install_sub {
+            into    => $class,
+            as      => $clear,
+            code    => sub { @{ $_[0]->$attr } = (); $_[0] },
+        };
+    }
+    return $attr => (
+        is      => 'ro',
+        default => sub { [] },
+        %arg,
+    );
+}
+
+sub settable {
+    my ($name, %arg) = @_;
+    my $class = scalar caller;
+    my $attr  = "_$name";
+    my $write = "_set_$name";
+    install_sub {
+        into    => $class,
+        as      => $name,
+        code    => sub { $_[0]->$write($_[1]); $_[0] },
+    };
+    install_sub {
+        into    => $class,
+        as      => "_has_$name",
+        code    => sub { defined $_[0]->$attr },
+    };
+    if (defined( my $clear = $arg{clearer} )) {
+        my $raw_clearer = $arg{clearer} = "_clear_$name";
+        install_sub {
+            into    => $class,
+            as      => $clear,
+            code    => sub { $_[0]->$raw_clearer; $_[0] },
+        };
+    }
+    return $attr => (
+        is      => 'ro',
+        writer  => $write,
+        %arg,
+    );
+}
+
 sub dbg_pp {
     pp(\[@_]);
     return wantarray ? @_ : shift;
+}
+
+sub tight_singleline ($) {
+    my $str = shift;
+    $str =~ s{\s*\n+\s*}{}g;
+    $str =~ s{(?:^\s+|\s+$)}{}g;
+    return $str;
 }
 
 sub singleline ($) {
@@ -121,19 +252,19 @@ sub get_nested {
         return undef
             unless defined $data;
         push @done, $key;
-        if ($key =~ m{^\[(\d+)\]$}) {
-            my $index = $1;
-            confess sprintf q{Cannot access index %d of non-array at %s},
-                $index, join '.', @done
-                unless ref $data eq 'ARRAY';
-            $data = $data->[$index];
-        }
-        else {
+#        if ($key =~ m{^\[(\d+)\]$}) {
+#            my $index = $1;
+#            confess sprintf q{Cannot access index %d of non-array at %s},
+#                $index, join '.', @done
+#                unless ref $data eq 'ARRAY';
+#            $data = $data->[$index];
+#        }
+#        else {
             confess sprintf q{Cannot access key '%s' of non-hash at %s},
                 $key, join '.', @done
                 unless ref $data eq 'HASH';
             $data = $data->{$key};
-        }
+#        }
     }
     return $data;
 }
@@ -149,14 +280,14 @@ sub nest_data {
         ) for keys %$data;
         return $done;
     }
-    elsif (ref $data eq 'ARRAY') {
-        my $done = {};
-        %$done = (
-            %$done,
-            %{ nest_data($data->[$_], $descend_prefix . "[$_]") },
-        ) for 0 .. $#$data;
-        return $done;
-    }
+#    elsif (ref $data eq 'ARRAY') {
+#        my $done = {};
+#        %$done = (
+#            %$done,
+#            %{ nest_data($data->[$_], $descend_prefix . "[$_]") },
+#        ) for 0 .. $#$data;
+#        return $done;
+#    }
     else {
         return { $prefix => $data };
     }
@@ -174,32 +305,32 @@ sub unnest_data {
             $done{$key} = $data->{$key};
         }
     }
-    my %count;
-    $count{$_}++ for map {
-        m{^\[\d+\]$} ? 'array' : 'hash';
-    } keys(%done), keys(%deeper);
-    confess "Cannot mix array and hash data structures"
-        if $count{hash} and $count{array};
-    if ($count{hash}) {
+#    my %count;
+#    $count{$_}++ for map {
+#        m{^\[\d+\]$} ? 'array' : 'hash';
+#    } keys(%done), keys(%deeper);
+#    confess "Cannot mix array and hash data structures"
+#        if $count{hash} and $count{array};
+#    if ($count{hash}) {
         return +{ %done, map {
             ($_, unnest_data($deeper{$_}));
         } keys %deeper };
-    }
-    elsif ($count{array}) {
-        my @processed;
-        for my $key (keys %done) {
-            $key =~ m{^\[(\d+)\]$};
-            $processed[$1] = $done{$key};
-        }
-        for my $key (keys %deeper) {
-            $key =~ m{^\[(\d+)\]$};
-            $processed[$1] = unnest_data($deeper{$key});
-        }
-        return [@processed];
-    }
-    else {
-        return {};
-    }
+#    }
+#    elsif ($count{array}) {
+#        my @processed;
+#        for my $key (keys %done) {
+#            $key =~ m{^\[(\d+)\]$};
+#            $processed[$1] = $done{$key};
+#        }
+#        for my $key (keys %deeper) {
+#            $key =~ m{^\[(\d+)\]$};
+#            $processed[$1] = unnest_data($deeper{$key});
+#        }
+#        return [@processed];
+#    }
+#    else {
+#        return {};
+#    }
 }
 
 sub pp { Data::Dump::pp(shift) }
@@ -217,6 +348,23 @@ sub isa_instance {
     return sub {
         blessed($_[0]) and $_[0]->isa($class)
             or confess("$name has to be an instance of $class");
+    };
+}
+
+sub isa_component {
+    my ($name) = @_;
+    return isa_instance('WebLayer::UI::Component', $name);
+}
+
+sub isa_duration {
+    my ($name) = @_;
+    return sub {
+        confess("$name has to be 'fast', 'slow' or a millisecond value")
+            if not(defined $_[0])
+            or ref($_[0])
+            or $_[0] eq 'fast'
+            or $_[0] eq 'slow'
+            or $_[0] =~ m{^[0-9]+$};
     };
 }
 

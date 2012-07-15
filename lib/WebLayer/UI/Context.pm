@@ -1,7 +1,7 @@
 package WebLayer::UI::Context;
 use Moo;
 use Carp                qw( confess );
-use WebLayer::UI::Util  qw( :types :nested :json );
+use WebLayer::UI::Util  qw( :types :nested :json pp );
 use namespace::clean;
 
 has _ui => (
@@ -37,6 +37,13 @@ sub _get_value {
 sub _render {
     my ($self, $item) = @_;
     return $item->_render_with_context($self);
+}
+
+sub _render_with_subdata {
+    my ($self, $item, $data) = @_;
+    local $self->{_data} = { %{ $self->_data }, %{ unnest_data $data } };
+#    pp $self->_data;
+    return $self->_render($item);
 }
 
 sub _ensure_output {

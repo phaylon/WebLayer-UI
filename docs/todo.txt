@@ -1,5 +1,10 @@
 ** Note: These are just ideas **
 
+CLASS TOGGLES:
+
+    $comp->class_toggle('active', 'navlink.current')
+
+
 WATCHERS:
 
     $comp->watch('some.value', sub {

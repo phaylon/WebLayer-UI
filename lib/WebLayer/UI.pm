@@ -4,8 +4,8 @@ package WebLayer::UI;
 use Moo;
 use FindBin;
 use File::Spec;
-use File::ShareDir qw( dist_dir );
-use WebLayer::UI::Util  qw( :types );
+use File::ShareDir      qw( dist_dir );
+use WebLayer::UI::Util  qw( :types :nested );
 use Class::Load         qw( load_first_existing_class load_class );
 
 use aliased 'WebLayer::UI::Environment::Base', 'BaseEnv';
@@ -40,6 +40,11 @@ sub _build__share_dir {
 sub js {
     my ($self) = @_;
     return $self->slurp('js/preamble.js');
+}
+
+sub flatten {
+    my ($self, $data) = @_;
+    return nest_data $data;
 }
 
 sub file { $_file->((shift)->_share_dir, @_) }

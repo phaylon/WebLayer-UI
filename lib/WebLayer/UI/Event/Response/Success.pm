@@ -43,14 +43,20 @@ sub when_true {
 sub _render_body {
     my ($self) = @_;
     return join ';',
+        $self->_render_flattening,
         $self->_render_populations,
         $self->_render_conditions,
         $self->_render_actions;
 }
 
+sub _render_flattening {
+    my ($self) = @_;
+    return 'var data = wlui.flattenResponse(raw_data)';
+}
+
 sub _render_func {
     my ($self) = @_;
-    return sprintf q!function (data, text_status, xhr) { %s }!,
+    return sprintf q!function (raw_data, text_status, xhr) { %s }!,
         $self->_render_body;
 }
 
